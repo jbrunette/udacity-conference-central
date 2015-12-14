@@ -120,10 +120,10 @@ class Session(ndb.Model):
     name            = ndb.StringProperty(required=True)
     highlights      = ndb.StringProperty()
     speaker         = ndb.StringProperty()
-    duration        = ndb.StringProperty()
+    duration        = ndb.IntegerProperty()
     typeOfSession   = ndb.StringProperty()
     date            = ndb.DateProperty()
-    startTime       = ndb.StringProperty()
+    startTime       = ndb.IntegerProperty()
     websafeConferenceKey = ndb.StringProperty()
 
 class SessionForm(messages.Message):
@@ -131,10 +131,10 @@ class SessionForm(messages.Message):
     name                 = messages.StringField(1)
     highlights           = messages.StringField(2)
     speaker              = messages.StringField(3)
-    duration             = messages.StringField(4)
+    duration             = messages.IntegerField(4)
     typeOfSession        = messages.StringField(5)
     date                 = messages.StringField(6)
-    startTime            = messages.StringField(7)
+    startTime            = messages.IntegerField(7)
     websafeKey           = messages.StringField(8)
     websafeConferenceKey = messages.StringField(9)
 

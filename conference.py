@@ -659,6 +659,10 @@ class ConferenceApi(remote.Service):
             raise endpoints.NotFoundException(
                 'No conference found with key: %s' % request.websafeConferenceKey)
 
+        # Is the user not the organizer of the conference?  Send an Unauthorized exception
+        if conf.organizerUserId != user_id:
+            raise endpoints.UnauthorizedException('You are not authorized to create a session for this conference, %s' % conf.organizerUserId)            
+
         # copy SessionForm/ProtoRPC Message into dict
         data = {field.name: getattr(request, field.name) for field in request.all_fields()}
         del data['websafeKey']
@@ -690,7 +694,7 @@ class ConferenceApi(remote.Service):
 
     @ndb.transactional(xg=True)
     def _addSessionToWishlist(self, request):
-        """Add selected session to user's wishlist."""
+        """Add provided session to user's wishlist."""
         retval = None
         prof = self._getProfileFromUser() # get user Profile
 
@@ -715,6 +719,31 @@ class ConferenceApi(remote.Service):
         prof.put()
         return BooleanMessage(data=retval)
 
+    @ndb.transactional(xg=True)
+    def _deleteSessionFromWishlist(self, request):
+        """Deletes provided session from user's wishlist."""
+        retval = None
+        prof = self._getProfileFromUser() # get user Profile
+
+        # check if session exists given websafeSessionKey
+        # get session; check that it exists
+        wssk = request.websafeSessionKey
+        sess = ndb.Key(urlsafe=wssk).get()
+        if not sess:
+            raise endpoints.NotFoundException(
+                'No session found with key: %s' % wssk)
+
+        # check if session in wishlist
+        if wssk not in prof.sessionWishlist:
+            raise endpoints.NotFoundException("Session not found in wishlist")
+
+        # add session to wishlist
+        prof.sessionWishlist.remove(wssk)
+        retval = True
+
+        # write things back to the datastore & return
+        prof.put()
+        return BooleanMessage(data=retval)
 
     @endpoints.method(message_types.VoidMessage, SessionForms,
             path='sessions/wishlist',
@@ -735,6 +764,13 @@ class ConferenceApi(remote.Service):
     def addSessionToWishlist(self, request):
         """Add session to user's wishlist."""
         return self._addSessionToWishlist(request)
+
+    @endpoints.method(SESS_GET_REQUEST, BooleanMessage,
+            path='deleteSessionFromWishlist/{websafeSessionKey}',
+            http_method='POST', name='deleteSessionFromWishlist')
+    def deleteSessionFromWishlist(self, request):
+        """Add session to user's wishlist."""
+        return self._deleteSessionFromWishlist(request)
 
 # - - - Task 3  - - - - - - - - - - - - - - - - - - - -
 
